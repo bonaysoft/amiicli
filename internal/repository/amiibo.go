@@ -6,25 +6,55 @@ import (
 	"github.com/bonaysoft/amiicli/internal/entity"
 )
 
-type AmiiboSelectOptions struct {
-	Name string
+type AmiiboListOptions struct {
+	Name       string
+	SearchPath string
 }
 
-type AmiiboSelectOption interface {
-	apply(*AmiiboSelectOptions)
+func NewAmiiboListOptions(opts ...ListOption) *AmiiboListOptions {
+	options := new(AmiiboListOptions)
+	for _, opt := range opts {
+		opt.apply(options)
+	}
+
+	return options
+}
+
+type ListOption interface {
+	apply(*AmiiboListOptions)
 }
 
 type nameOption string
 
-func (o nameOption) apply(opt *AmiiboSelectOptions) {
+func (o nameOption) apply(opt *AmiiboListOptions) {
 	opt.Name = string(o)
 }
 
-func AmiiboSelectWithName(name string) AmiiboSelectOption {
+func AmiiboListWithName(name string) ListOption {
 	return nameOption(name)
 }
 
-type Amiibo interface {
-	List(ctx context.Context) ([]entity.Amiibo, error)
-	Select(ctx context.Context, mode entity.Mode, opts ...AmiiboSelectOption) (*entity.Amiibo, error)
+type searchDirOption string
+
+func (o searchDirOption) apply(opt *AmiiboListOptions) {
+	opt.SearchPath = string(o)
+}
+
+func AmiiboListWithSearchDir(dir string) ListOption {
+	return searchDirOption(dir)
+}
+
+type AmiiboSearcher interface {
+	List(ctx context.Context, opts ...ListOption) ([]entity.Amiibo, error)
+}
+
+type AmiiboConstructor func() AmiiboSearcher
+
+var supportAmiiboSearchers = map[string]AmiiboConstructor{
+	"remote": NewAmiiboRemote,
+	"local":  NewAmiiboLocal,
+}
+
+func NewAmiiboSearcher(name string) AmiiboSearcher {
+	return supportAmiiboSearchers[name]()
 }

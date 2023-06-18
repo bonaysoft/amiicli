@@ -7,6 +7,6 @@ import (
 )
 
 type Device interface {
-	Clone(ctx context.Context, amiibo *entity.Amiibo) error
+	Restore(ctx context.Context, amiibo *entity.Amiibo, password string) error
 	Simulate(ctx context.Context, amiibo *entity.Amiibo) error
 }

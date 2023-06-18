@@ -34,19 +34,22 @@ func NewPM3Device(keyRetail string) (*PM3Device, error) {
 	}, nil
 }
 
-func (d *PM3Device) Clone(ctx context.Context, amiibo *entity.Amiibo) error {
-	// TODO implement me
-	panic("implement me")
+func (d *PM3Device) Restore(ctx context.Context, amiibo *entity.Amiibo, password string) error {
+	distBinFilePath := filepath.Join(d.tmpDir, "new.bin")
+	err := d.resetUID(ctx, amiibo.Path, distBinFilePath)
+	if err != nil {
+		return err
+	}
+
+	exeCmd := exec.CommandContext(ctx, "pm3", "-c", fmt.Sprintf("script run hf_mfu_amiibo_restore -f %s -k %s", distBinFilePath, password))
+	_, err = exeCmd.CombinedOutput()
+	return err
 }
 
 func (d *PM3Device) Simulate(ctx context.Context, amiibo *entity.Amiibo) error {
-	uid := "04" + hexuid.RandomText(12)
-	srcBinFilePath := amiibo.Path
 	distBinFilePath := filepath.Join(d.tmpDir, "new.bin")
-	ec := exec.CommandContext(ctx, "pm3", "-c", fmt.Sprintf("script run amiibo_change_uid %s %s %s %s", uid, srcBinFilePath, distBinFilePath, d.keyRetail))
-	ec.Stdout = os.Stdout
-	ec.Stderr = os.Stderr
-	if err := ec.Run(); err != nil {
+	err := d.resetUID(ctx, amiibo.Path, distBinFilePath)
+	if err != nil {
 		return err
 	}
 
@@ -54,4 +57,11 @@ func (d *PM3Device) Simulate(ctx context.Context, amiibo *entity.Amiibo) error {
 	exeCmd.Stdout = os.Stdout
 	exeCmd.Stderr = os.Stderr
 	return exeCmd.Run()
+}
+
+func (d *PM3Device) resetUID(ctx context.Context, srcBinFilePath string, distBinFilePath string) error {
+	uid := "04" + hexuid.RandomText(12)
+	exeCmd := exec.CommandContext(ctx, "pm3", "-c", fmt.Sprintf("script run amiibo_change_uid %s %s %s %s", uid, srcBinFilePath, distBinFilePath, d.keyRetail))
+	_, err := exeCmd.CombinedOutput()
+	return err
 }

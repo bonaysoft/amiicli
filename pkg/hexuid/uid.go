@@ -25,3 +25,13 @@ func RandomText(n int) string {
 
 	return strutil.B2s(b)
 }
+
+func RandomBytes(count int) []byte {
+	output := make([]byte, count)
+
+	for i := 0; i < count; i++ {
+		output[i] = byte(rand.Intn(256))
+	}
+
+	return output
+}

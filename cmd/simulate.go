@@ -22,8 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/bonaysoft/amiicli/internal/repository"
 	"github.com/bonaysoft/amiicli/internal/usecase"
 	"github.com/spf13/cobra"
@@ -35,18 +33,25 @@ var simCmd = &cobra.Command{
 	Use:     "simulate",
 	Aliases: []string{"sim"},
 	Short:   "simulate amiibos",
-	Run: func(cmd *cobra.Command, args []string) {
-		amiibo := repository.NewAmiiboLocal()
-		pm3, err := repository.NewPM3Device(viper.GetString("key-retail"))
-		if err != nil {
-			fmt.Println(err)
-			return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		var opts []repository.ListOption
+		if localSearchDir := viper.GetString("searcher-dir"); localSearchDir != "" {
+			opts = append(opts, repository.AmiiboListWithSearchDir(localSearchDir))
 		}
 
-		if err := usecase.NewSim(amiibo, pm3).Action(cmd.Context()); err != nil {
-			fmt.Println(err)
-			return
+		amiibo := repository.NewAmiiboSearcher(viper.GetString("searcher"))
+		amiibos, err := amiibo.List(ctx, opts...)
+		if err != nil {
+			return err
 		}
+
+		pm3, err := repository.NewPM3Device(viper.GetString("key-retail"))
+		if err != nil {
+			return err
+		}
+
+		return usecase.NewSim(pm3).Action(ctx, amiibos)
 	},
 }
 
@@ -54,5 +59,7 @@ func init() {
 	rootCmd.AddCommand(simCmd)
 
 	simCmd.Flags().String("key-retail", "key_retail.bin", "specify the path of the key_retail.bin")
+	simCmd.Flags().String("searcher", "remote", "specify the mode of the amiibo searcher")
+	simCmd.Flags().String("searcher-dir", "~/.local/share/amiicli/local", "specify the dir path of the amiibo searcher")
 	_ = viper.BindPFlags(simCmd.Flags())
 }
