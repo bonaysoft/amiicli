@@ -17,3 +17,8 @@ go install github.com/bonaysoft/amiicli@latest
 ```bash
 amiicli sim
 ```
+
+## Credits:
+
+- [AmiiboAPI](https://github.com/N3evin/AmiiboAPI)
+- [Amiitool](https://github.com/socram8888/amiitool)
