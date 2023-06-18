@@ -2,6 +2,7 @@ package amiibo
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +17,7 @@ type AmiiTool struct {
 }
 
 func NewAmiiTool(keyRetail string) Client {
+	prepareTool()
 	return &AmiiTool{keyRetail: keyRetail}
 }
 
@@ -54,4 +56,25 @@ func (a *AmiiTool) stash(src []byte) (*os.File, error) {
 	}
 
 	return srcFile, nil
+}
+
+func prepareTool() {
+	_, err := exec.LookPath("amiitool")
+	if err == nil {
+		return
+	}
+
+	fmt.Println("detect: amiitool is not installed, automatically installing...")
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("error getting user home: %v", err)
+		return
+	}
+
+	_ = os.MkdirAll(userHome+"/.local/bin", 0755)
+	if err := os.WriteFile(userHome+"/.local/bin/amiitool", amiitoolBytes, 0755); err != nil {
+		log.Fatalf("error installing amiitool: %v", err)
+		return
+	}
+	fmt.Println("detect: amiitool is install done.")
 }
