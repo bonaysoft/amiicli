@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/abusomani/go-palette/palette"
@@ -28,14 +29,14 @@ func (s *Sim) Action(ctx context.Context, amiibos []entity.Amiibo) error {
 
 	amiiboSelect := func() (*entity.Amiibo, error) { return &amiibos[rand.Intn(len(amiibos))], nil }
 	if entity.Mode(answer.Mode) == entity.ModeSpecify {
-		var amiiboName string
-		if err := survey.AskOne(s.specifyQuestion(amiibos), &amiiboName); err != nil {
+		var amiiboID string
+		if err := survey.AskOne(s.specifyQuestion(amiibos), &amiiboID); err != nil {
 			return fmt.Errorf("ask amiiboName: %v", err)
 		}
 
-		amiibo, ok := lo.Find(amiibos, func(item entity.Amiibo) bool { return item.Name == amiiboName })
+		amiibo, ok := lo.Find(amiibos, func(item entity.Amiibo) bool { return strings.HasPrefix(amiiboID, item.ID) })
 		if !ok {
-			return fmt.Errorf("not found the specified amiibo: %s", amiiboName)
+			return fmt.Errorf("not found the specified amiibo: %s", amiiboID)
 		}
 
 		amiiboSelect = func() (*entity.Amiibo, error) {
@@ -55,7 +56,7 @@ func (s *Sim) Action(ctx context.Context, amiibos []entity.Amiibo) error {
 			return fmt.Errorf("build amiibo failed: %s", err)
 		}
 
-		p.Printf("starting simulate amiibo[%d] %s...\n", i+1, amiibo.Name)
+		p.Printf("starting simulate amiibo[%d] [%s]%s...\n", i+1, amiibo.ID, amiibo.Name)
 		if err := s.device.Simulate(ctx, amiibo); err != nil {
 			return fmt.Errorf("simulate amiibo[%s] failed: %s", amiibo.Name, err)
 		}
@@ -83,8 +84,9 @@ func (s *Sim) questions() []*survey.Question {
 }
 
 func (s *Sim) specifyQuestion(amiibos []entity.Amiibo) survey.Prompt {
+	options := lo.Map(amiibos, func(item entity.Amiibo, index int) string { return fmt.Sprintf("%s - %s", item.ID, item.Name) })
 	return &survey.Select{
 		Message: "请选择Amiibo:",
-		Options: lo.Map(amiibos, func(item entity.Amiibo, index int) string { return item.Name }),
+		Options: options,
 	}
 }
