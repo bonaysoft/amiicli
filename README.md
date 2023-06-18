@@ -1,6 +1,6 @@
 # amiicli
 
-A simple cli tool helps you clone or simulate any amiibos that you want.
+A simple cli tool helps you simulate or restore any amiibos that you want.
 
 ## Supported Devices
 
